@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BGP Operations in Fortinet SD-WAN: Complete Flowchart Guide</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.4/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                fontSize: '14px'
+            },
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true
+            }
+        });
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #fff;
+            padding: 40px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+        
+        h2 {
+            color: #34495e;
+            margin-top: 50px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-left: 5px solid #3498db;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #7f8c8d;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .mermaid {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .section {
+            margin-bottom: 60px;
+            page-break-inside: avoid;
+        }
+        
+        .key-points {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .key-points ul {
+            margin-top: 10px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        /* Print styles */
+        @media print {
+            body {
+                padding: 20px;
+                max-width: 100%;
+            }
+            
+            .mermaid {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            
+            h2 {
+                page-break-before: always;
+            }
+            
+            h2:first-of-type {
+                page-break-before: avoid;
+            }
+            
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+        
+        @page {
+            size: letter;
+            margin: 0.5in;
+        }
+    </style>
+</head>
+<body>
+    <h1>BGP Operations in Fortinet SD-WAN: Complete Flowchart Guide</h1>
+
+    <div class="section">
+        <h2>1. BGP Route Advertisement Flow (Spoke to Hub)</h2>
+        <p>This shows how a spoke advertises its local networks to the hubs, including the use of outbound route maps that can set communities, MED values, and other BGP attributes.</p>
+
+        <pre class="mermaid">
+flowchart TD
+    Start(["Spoke has local network<br/>10.50.0.0/24"]) --> Network["BGP Network Statement<br/>or Redistribution"]
+    
+    Network --> OutMap{"Outbound Route Map<br/>configured?"}
+    
+    OutMap -->|Yes| OutRules["Apply Route Map Rules:<br/>- Set Communities<br/>- Set MED<br/>- Modify AS-Path<br/>- Set BGP Tags"]
+    OutMap -->|No| SendHub
+    
+    OutRules --> Permit{"Rule Action?"}
+    Permit -->|Permit| SendHub["Send to Hub1 & Hub2<br/>via BGP Update"]
+    Permit -->|Deny| Drop["Route NOT Advertised"]
+    
+    SendHub --> Hub1["Hub1 Receives:<br/>10.50.0.0/24<br/>Community: 65001:10<br/>MED: 100<br/>AS-Path: 65050"]
+    SendHub --> Hub2["Hub2 Receives:<br/>10.50.0.0/24<br/>Community: 65001:10<br/>MED: 100<br/>AS-Path: 65050"]
+    
+    Hub1 --> HubProcess["Hub Processing..."]
+    Hub2 --> HubProcess
+    
+    style Start fill:#e1f5e1
+    style Drop fill:#ffe1e1
+    style SendHub fill:#e1e5ff
+    style HubProcess fill:#fff5e1
+        </pre>
+
+        <div class="key-points">
+            <h3>Key Points:</h3>
+            <ul>
+                <li><strong>Network Statement:</strong> Defines which local networks to advertise via BGP</li>
+                <li><strong>Outbound Route Map:</strong> Applied before sending to neighbors, modifies BGP attributes</li>
+                <li><strong>Communities:</strong> Tags for grouping routes (e.g., by site type or region)</li>
+                <li><strong>MED:</strong> Suggests to neighbors which path they should prefer</li>
+                <li><strong>Redundancy:</strong> Spokes advertise to both hubs for resilience</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>2. BGP Route Reception & Processing (At Hub)</h2>
+        <p>When hubs receive routes from spokes, they apply inbound route maps that can filter routes and modify attributes before adding them to the BGP table.</p>
+
+        <pre class="mermaid">
+flowchart TD
+    Receive["Hub Receives Route<br/>from Spoke"] --> InMap{"Inbound Route Map<br/>on neighbor?"}
+    
+    InMap -->|Yes| MatchRules["Match Conditions:<br/>- Prefix List?<br/>- Community List?<br/>- AS-Path Filter?<br/>- Origin?"]
+    InMap -->|No| ToTable
+    
+    MatchRules --> Matched{"Matched?"}
+    
+    Matched -->|Yes| SetAttribs["Set Attributes:<br/>- Local-Preference<br/>- MED<br/>- Weight<br/>- Add/Remove Communities<br/>- Set BGP Tags"]
+    Matched -->|No| NextRule{"More Rules?"}
+    
+    NextRule -->|Yes| MatchRules
+    NextRule -->|No| DefaultAction{"Implicit Deny?"}
+    
+    DefaultAction -->|Yes| Reject["Route Rejected"]
+    DefaultAction -->|No| ToTable
+    
+    SetAttribs --> RuleAction{"Rule Action?"}
+    RuleAction -->|Permit| ToTable["Route Enters<br/>BGP Table"]
+    RuleAction -->|Deny| Reject
+    
+    ToTable --> BestPath["BGP Best Path<br/>Selection Process"]
+    
+    style Receive fill:#e1f5e1
+    style Reject fill:#ffe1e1
+    style ToTable fill:#e1e5ff
+    style BestPath fill:#fff5e1
+        </pre>
+
+        <div class="key-points">
+            <h3>Key Points:</h3>
+            <ul>
+                <li><strong>Inbound Route Map:</strong> Applied when routes arrive from BGP neighbors</li>
+                <li><strong>Match Conditions:</strong> Prefix lists, community lists, AS-path filters determine which routes to process</li>
+                <li><strong>Sequential Processing:</strong> Route map rules evaluated in order until a match is found</li>
+                <li><strong>Set Attributes:</strong> Local-Preference, MED, Weight, Communities, and BGP Tags can be modified</li>
+                <li><strong>Permit/Deny:</strong> After matching and setting attributes, the rule action determines if the route is accepted</li>
+                <li><strong>Implicit Deny:</strong> Without a final permit rule, unmatched routes may be rejected (depends on configuration)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>3. BGP Best Path Selection Process</h2>
+        <p>This is the core algorithm tha BGP uses to choose the best path when multiple routes to the same destination exist. The algorithm is rule-based and follows a strict order.</p>
+
+        <pre class="mermaid">
+flowchart TD
+    Start(["Multiple Paths for<br/>10.50.0.0/24 exist"]) --> Valid{"Path Valid?<br/>Next-hop reachable?"}
+    
+    Valid -->|No| Ignore["Ignore this path"]
+    Valid -->|Yes| Weight{"Compare Weight"}
+    
+    Weight -->|Different| UseWeight["Use Highest Weight"]
+    Weight -->|Same| LocalPref{"Compare<br/>Local Preference"}
+    
+    LocalPref -->|Different| UseLP["Use Highest<br/>Local-Pref"]
+    LocalPref -->|Same| Local{"Locally<br/>Originated?"}
+    
+    Local -->|Yes| UseLocal["Prefer Local Route"]
+    Local -->|Same/No| ASPath{"Compare<br/>AS-Path Length"}
+    
+    ASPath -->|Different| UseShorter["Use Shorter<br/>AS-Path"]
+    ASPath -->|Same| Origin{"Compare Origin"}
+    
+    Origin -->|Different| UseIGP["IGP > EGP ><br/>Incomplete"]
+    Origin -->|Same| MED{"Compare MED"}
+    
+    MED -->|Different| UseLowerMED["Use Lower MED"]
+    MED -->|Same| PeerType{"eBGP vs iBGP?"}
+    
+    PeerType -->|Different| UseEBGP["Prefer eBGP"]
+    PeerType -->|Same| IGPMetric{"IGP Metric to<br/>Next-Hop"}
+    
+    IGPMetric -->|Different| UseLowerIGP["Use Lower IGP Cost"]
+    IGPMetric -->|Same| Age{"Oldest Route?"}
+    
+    Age -->|Different| UseOldest["Use Oldest Path<br/>for stability"]
+    Age -->|Same| RouterID{"Lowest<br/>Router ID?"}
+    
+    RouterID --> UseLowerRID["Use Lowest<br/>Router ID"]
+    
+    UseWeight --> Winner
+    UseLP --> Winner
+    UseLocal --> Winner
+    UseShorter --> Winner
+    UseIGP --> Winner
+    UseLowerMED --> Winner
+    UseEBGP --> Winner
+    UseLowerIGP --> Winner
+    UseOldest --> Winner
+    UseLowerRID --> Winner
+    
+    Winner(["Selected as<br/>BEST PATH"]) --> Install["Install in RIB<br/>Routing Table"]
+    
+    Install --> Advertise{"Advertise to<br/>other peers?"}
+    
+    style Start fill:#e1f5e1
+    style Winner fill:#90EE90
+    style Install fill:#e1e5ff
+    
+    classDef decision fill:#fff5cc
+    class Weight,LocalPref,Local,ASPath,Origin,MED,PeerType,IGPMetric,Age,RouterID decision
+        </pre>
+
+        <div class="key-points">
+            <h3>Key Points (In Order of Priority):</h3>
+            <ul>
+                <li><strong>1. Weight:</strong> Cisco/Fortinet local attribute (higher wins) - not standard BGP</li>
+                <li><strong>2. Local-Preference:</strong> Most important in SD-WAN! (higher wins, default 100)</li>
+                <li><strong>3. Locally Originated:</strong> Prefer routes you created yourself</li>
+                <li><strong>4. AS-Path:</strong> Shorter path wins (fewer AS hops)</li>
+                <li><strong>5. Origin:</strong> IGP (network cmd) > EGP > Incomplete (redistribute)</li>
+                <li><strong>6. MED:</strong> Lower wins (default 0) - only compared from same AS</li>
+                <li><strong>7. eBGP > iBGP:</strong> External peers preferred over internal</li>
+                <li><strong>8. IGP Metric:</strong> Lower cost to BGP next-hop wins</li>
+                <li><strong>9. Age:</strong> Older route preferred for stability</li>
+                <li><strong>10. Router ID:</strong> Tiebreaker - lowest router ID wins</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>4. Spoke Path Selection (Hub1 vs Hub2)</h2>
+        <p>A practical example showing how a spoke chooses between two hub paths, and how that selection integrates with SD-WAN forwarding decisions.</p>
+
+        <pre class="mermaid">
+flowchart TD
+    Start(["Spoke needs to reach<br/>Corporate Network<br/>172.16.0.0/16"]) --> Learn["Learns route from<br/>both Hub1 and Hub2"]
+    
+    Learn --> Hub1Path["Path via Hub1:<br/>Local-Pref: 200<br/>AS-Path: 65000<br/>MED: 100<br/>Next-hop: Hub1"]
+    
+    Learn --> Hub2Path["Path via Hub2:<br/>Local-Pref: 100<br/>AS-Path: 65000<br/>MED: 100<br/>Next-hop: Hub2"]
+    
+    Hub1Path --> Compare{"BGP Best Path<br/>Selection"}
+    Hub2Path --> Compare
+    
+    Compare --> Step1{"Step 1: Weight?"}
+    Step1 -->|Same Default 0| Step2{"Step 2: Local-Pref?"}
+    
+    Step2 -->|"Hub1: 200<br/>Hub2: 100"| Winner["Hub1 Path WINS!<br/>Due to Higher<br/>Local-Preference"]
+    
+    Winner --> SDWANRoute["Install in Routing Table"]
+    
+    SDWANRoute --> SDWANRule["SD-WAN Rules<br/>Evaluate Route"]
+    
+    SDWANRule --> Tunnel{"Which Tunnel<br/>to use?"}
+    
+    Tunnel --> Strategy{"SD-WAN Strategy?"}
+    
+    Strategy -->|SLA Based| CheckSLA["Check Tunnel SLA:<br/>- Latency<br/>- Jitter<br/>- Packet Loss"]
+    Strategy -->|Volume Based| CheckLoad["Check Tunnel Load"]
+    Strategy -->|Manual| UseStatic["Use Configured<br/>Priority"]
+    
+    CheckSLA --> SelectTunnel["Select Best Tunnel<br/>to Hub1"]
+    CheckLoad --> SelectTunnel
+    UseStatic --> SelectTunnel
+    
+    SelectTunnel --> Forward["Forward Traffic<br/>to Hub1"]
+    
+    style Start fill:#e1f5e1
+    style Winner fill:#90EE90
+    style Forward fill:#e1e5ff
+        </pre>
+
+        <div class="key-points">
+            <h3>Key Points:</h3>
+            <ul>
+                <li><strong>Local-Preference is King:</strong> This is the primary tool for hub selection in SD-WAN</li>
+                <li><strong>Set at Spoke:</strong> Inbound route maps on spoke set different local-pref per hub</li>
+                <li><strong>BGP to Routing Table:</strong> Best path is installed in the RIB</li>
+                <li><strong>SD-WAN Integration:</strong> SD-WAN rules then use the routing table to make forwarding decisions</li>
+                <li><strong>Tunnel Selection:</strong> Even after BGP picks the hub, SD-WAN picks which tunnel to that hub based on SLA</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>5. Complete SD-WAN Scenario: Spoke to Datacenter Traffic</h2>
+        <p>This diagram, or multiple diagrams really, attempts to show the complete journey: from route advertisement, through hub processing, spoke path selection, and then final traffic forwarding.</p>
+
+        <pre class="mermaid">
+flowchart TD
+    Spoke(["Spoke Site:<br/>AS 65050<br/>10.50.0.0/24"]) --> |BGP Peering| Hub1["Hub1:<br/>AS 65000"]
+    Spoke --> |BGP Peering| Hub2["Hub2:<br/>AS 65000"]
+    
+    Hub1 --> |BGP Peering| Core["Core Network:<br/>172.16.0.0/16"]
+    Hub2 --> |BGP Peering| Core
+    
+    subgraph "Step 1: Route Advertisement"
+        A1["Spoke advertises<br/>10.50.0.0/24"] --> A2["Outbound Route Map:<br/>Set Community 65001:50<br/>Set MED 100"]
+        A2 --> A3["Sent to Hub1 & Hub2"]
+    end
+    
+    subgraph "Step 2: Hub Processing"
+        B1["Hub1 receives route"] --> B2["Inbound Route Map:<br/>Match Community 65001:50<br/>Set Local-Pref 150"]
+        B2 --> B3["Install in BGP table"]
+        
+        B4["Hub2 receives route"] --> B5["Inbound Route Map:<br/>Match Community 65001:50<br/>Set Local-Pref 150"]
+        B5 --> B6["Install in BGP table"]
+    end
+    
+    subgraph "Step 3: Core Route Learning"
+        C1["Hub1 advertises<br/>172.16.0.0/16 to Spoke"] --> C2["Outbound Route Map:<br/>Set MED 50<br/>Next-hop-self"]
+        
+        C3["Hub2 advertises<br/>172.16.0.0/16 to Spoke"] --> C4["Outbound Route Map:<br/>Set MED 150<br/>Next-hop-self"]
+    end
+    
+    subgraph "Step 4: Spoke Path Selection"
+        D1["Spoke receives routes<br/>from both Hubs"] --> D2["Inbound Route Map on Hub1:<br/>Set Local-Pref 200"]
+        D1 --> D3["Inbound Route Map on Hub2:<br/>Set Local-Pref 100"]
+        
+        D2 --> D4{"BGP Decision:<br/>Local-Pref 200 vs 100"}
+        D3 --> D4
+        
+        D4 --> D5["Hub1 Path Selected!<br/>Best Path to 172.16.0.0/16"]
+    end
+    
+    subgraph "Step 5: SD-WAN Forwarding"
+        E1["SD-WAN Rule evaluates<br/>destination 172.16.0.0/16"] --> E2["Matches BGP route<br/>via Hub1"]
+        E2 --> E3["Check available tunnels<br/>to Hub1"]
+        E3 --> E4{"SLA Metrics OK?"}
+        E4 -->|Yes| E5["Forward via<br/>Primary Tunnel"]
+        E4 -->|No| E6["Forward via<br/>Backup Tunnel"]
+    end
+    
+    style Spoke fill:#e1f5e1
+    style Hub1 fill:#e1e5ff
+    style Hub2 fill:#e1e5ff
+    style Core fill:#ffe1e1
+    style D5 fill:#90EE90
+    style E5 fill:#90EE90
+        </pre>
+
+        <div class="key-points">
+            <h3>Complete Flow Summary:</h3>
+            <ul>
+                <li><strong>Step 1:</strong> Spoke tags and advertises its local networks to both hubs</li>
+                <li><strong>Step 2:</strong> Hubs receive, match communities, and install routes</li>
+                <li><strong>Step 3:</strong> Hubs advertise core/datacenter routes back to spoke with different MEDs</li>
+                <li><strong>Step 4:</strong> Spoke uses local-preference to select Hub1 as preferred path</li>
+                <li><strong>Step 5:</strong> SD-WAN forwarding uses the BGP route and selects best tunnel based on SLA</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>6. Route Map Decision Tree</h2>
+        <p>Route maps are evaluated sequentially, rule by rule. This shows how a route progresses through multiple rules until it's either accepted, with modifications, or rejected.</p>
+
+        <pre class="mermaid">
+flowchart TD
+    Start(["Route Map Evaluation"]) --> Rule1{"Rule 10"}
+    
+    Rule1 --> Match1{"Match Condition?"}
+    Match1 -->|Prefix List: DATACENTER| Set1["Set Actions:<br/>Local-Pref 200<br/>Community 65000:100"]
+    Match1 -->|No Match| Rule2
+    
+    Set1 --> Action1{"Rule Action?"}
+    Action1 -->|Permit| Accept1["Route Accepted<br/>with Modifications"]
+    Action1 -->|Deny| Reject["Route Rejected"]
+    
+    Rule2{"Rule 20"} --> Match2{"Match Condition?"}
+    Match2 -->|Prefix List: BRANCH| Set2["Set Actions:<br/>Local-Pref 150<br/>Community 65000:200"]
+    Match2 -->|No Match| Rule3
+    
+    Set2 --> Action2{"Rule Action?"}
+    Action2 -->|Permit| Accept2["Route Accepted<br/>with Modifications"]
+    Action2 -->|Deny| Reject
+    
+    Rule3{"Rule 30"} --> Match3{"Match Condition?"}
+    Match3 -->|Any| Set3["Set Actions:<br/>Local-Pref 100"]
+    
+    Set3 --> Action3{"Rule Action?"}
+    Action3 -->|Permit| Accept3["Route Accepted<br/>with Default Values"]
+    Action3 -->|Deny| Reject
+    
+    Match3 -->|No More Rules| Implicit{"Implicit Deny?"}
+    Implicit -->|Default Behavior| Reject
+    
+    Accept1 --> Applied["Route Map Applied<br/>Continue Processing"]
+    Accept2 --> Applied
+    Accept3 --> Applied
+    
+    style Start fill:#e1f5e1
+    style Accept1 fill:#90EE90
+    style Accept2 fill:#90EE90
+    style Accept3 fill:#90EE90
+    style Reject fill:#ffe1e1
+        </pre>
+
+        <div class="key-points">
+            <h3>Key Points:</h3>
+            <ul>
+                <li><strong>Sequential Processing:</strong> Rules evaluated in numerical order (10, 20, 30, etc.)</li>
+                <li><strong>First Match Wins:</strong> Once a rule matches and permits/denies, processing stops</li>
+                <li><strong>Match Then Set:</strong> If match conditions are met, set actions are applied</li>
+                <li><strong>Permit vs Deny:</strong> After setting attributes, the rule action determines if route is accepted</li>
+                <li><strong>Implicit Deny:</strong> Routes that don't match any rule may be denied (depends on config)</li>
+                <li><strong>Catch-All Rule:</strong> Last rule typically matches "any" to provide default behavior</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>7. Hub Failover Scenario</h2>
+        <p>What happens when your primary hub fails? This shows the BGP convergence process and how traffic automatically fails over to the backup hub, then reconverges when the primary recovers.</p>
+
+        <pre class="mermaid">
+flowchart TD
+    Normal(["Normal Operation:<br/>All traffic via Hub1"]) --> Failure{"Hub1 Tunnel<br/>Fails"}
+    
+    Failure -->|Tunnel Down| BGPDead{"BGP Session<br/>Status"}
+    
+    BGPDead -->|"Hold Timer Expires<br/>180 seconds default"| Withdraw["Hub1 Path Withdrawn<br/>from BGP Table"]
+    
+    Withdraw --> Reconverge["BGP Reconvergence"]
+    
+    Reconverge --> NewBest["Hub2 Path now<br/>BEST PATH"]
+    
+    NewBest --> Update["Update Routing Table"]
+    
+    Update --> SDWANSwitch["SD-WAN switches<br/>to Hub2 tunnels"]
+    
+    SDWANSwitch --> Traffic["Traffic flows<br/>via Hub2"]
+    
+    Traffic --> Monitor{"Monitoring Hub1"}
+    
+    Monitor --> Recovery{"Hub1 Recovers?"}
+    
+    Recovery -->|Tunnel Up| BGPUp["BGP Session<br/>Re-establishes"]
+    
+    BGPUp --> ReadvertiseHub1["Hub1 Advertises<br/>Routes Again"]
+    
+    ReadvertiseHub1 --> CompareAgain["BGP Compares:<br/>Hub1 Local-Pref 200<br/>Hub2 Local-Pref 100"]
+    
+    CompareAgain --> BackToHub1["Hub1 Becomes<br/>Best Path Again"]
+    
+    BackToHub1 --> PreemptTime{"Preemption<br/>Delay?"}
+    
+    PreemptTime -->|Optional Timer| Wait["Wait for Stability"]
+    PreemptTime -->|Immediate| Switchback
+    
+    Wait --> Switchback["Traffic Switches<br/>Back to Hub1"]
+    
+    Switchback --> Normal
+    
+    style Normal fill:#90EE90
+    style Failure fill:#FFD700
+    style Withdraw fill:#FFA500
+    style SDWANSwitch fill:#e1e5ff
+    style BackToHub1 fill:#90EE90
+        </pre>
+
+        <div class="key-points">
+            <h3>Key Points:</h3>
+            <ul>
+                <li><strong>Failure Detection:</strong> BGP hold timer (default 180s) must expire before routes are withdrawn</li>
+                <li><strong>Faster Detection:</strong> Consider tuning BGP timers (e.g., 10/30) for quicker failover</li>
+                <li><strong>Automatic Failover:</strong> BGP automatically selects next-best path (Hub2)</li>
+                <li><strong>Zero Touch Recovery:</strong> When Hub1 returns, BGP automatically reconverges</li>
+                <li><strong>Preemption:</strong> Can add dampening timers to prevent flapping during unstable periods</li>
+                <li><strong>SD-WAN Integration:</strong> BGP provides the path, SD-WAN provides tunnel-level resilience</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>8. Component Relationships</h2>
+        <p>This high-level diagram shows how all the BGP components interconnect and influence each other in an SD-WAN deployment.</p>
+
+        <pre class="mermaid">
+flowchart TD
+    subgraph "Route Manipulation"
+        RM["Route Maps"]
+        PL["Prefix Lists"]
+        CL["Community Lists"]
+        ASF["AS-Path Filters"]
+        
+        RM -->|Uses| PL
+        RM -->|Uses| CL
+        RM -->|Uses| ASF
+    end
+    
+    subgraph "BGP Attributes Set by Route Maps"
+        LP["Local Preference"]
+        MED["MED/Metric"]
+        COMM["Communities"]
+        TAG["BGP Tags"]
+        WT["Weight"]
+        
+        RM -->|Sets| LP
+        RM -->|Sets| MED
+        RM -->|Sets| COMM
+        RM -->|Sets| TAG
+        RM -->|Sets| WT
+    end
+    
+    subgraph "Path Selection Uses"
+        LP --> BPS["BGP Best Path<br/>Selection"]
+        MED --> BPS
+        WT --> BPS
+        ASP["AS-Path Length"] --> BPS
+    end
+    
+    subgraph "Traffic Engineering"
+        BPS --> RIB["Routing Table"]
+        RIB --> SDWAN["SD-WAN Rules"]
+        SDWAN --> FWD["Traffic Forwarding"]
+    end
+    
+    subgraph "Administrative"
+        COMM -->|Grouping| Policy["Policy Decisions"]
+        TAG -->|Tracking| Policy
+        Policy --> RM
+    end
+    
+    style RM fill:#FFD700
+    style BPS fill:#90EE90
+    style SDWAN fill:#e1e5ff
+        </pre>
+
+        <div class="key-points">
+            <h3>Understanding the Relationships:</h3>
+            <ul>
+                <li><strong>Route Maps are Central:</strong> They're the configuration tool that ties everything together</li>
+                <li><strong>Match Tools:</strong> Prefix lists, community lists, and AS-path filters are used by route maps to identify potential routes</li>
+                <li><strong>Set Actions:</strong> Route maps modify BGP attributes to influence path selection</li>
+                <li><strong>Best Path Algorithm:</strong> Uses the attributes set by route maps to choose optimal paths</li>
+                <li><strong>Communities & Tags:</strong> Used for administrative purposes and policy decisions</li>
+                <li><strong>Final Output:</strong> Best paths go into routing table, which SD-WAN uses for forwarding</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Usage Notes</h2>
+        <ol>
+            <li><strong>Route Advertisement:</strong> Shows how routes leave a spoke with attributes</li>
+            <li><strong>Route Reception:</strong> How hubs process incoming routes with route maps</li>
+            <li><strong>Best Path Selection:</strong> The complete algorithm BGP uses</li>
+            <li><strong>Spoke Decision:</strong> How spokes choose between multiple hubs</li>
+            <li><strong>Complete Flow:</strong> End-to-end traffic flow with all components</li>
+            <li><strong>Route Map Logic:</strong> How route map rules are evaluated sequentially</li>
+            <li><strong>Failover:</strong> What happens when primary path fails</li>
+            <li><strong>Relationships:</strong> How all components interconnect</li>
+        </ol>
+    </div>
+</body>
+</html>
